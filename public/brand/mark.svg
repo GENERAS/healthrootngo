@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="currentColor" role="img" aria-labelledby="hr-mark-title">
+  <title id="hr-mark-title">Health Root</title>
+  <!--
+    Health Root mark: "Root &amp; Person"
+
+    One idea, one shape, one colour. A solid disc stands for the community;
+    a figure is knocked out of it whose lower body splits into a splayed root
+    system. The person and the root are the same shape, so the mark carries
+    both halves of the name in a single read.
+
+    Construction
+      grid            64 x 64, all coordinates on a 0.2u sub-grid
+      disc            r 30 about (32,32), leaving 2u breathing room
+      figure          vertically symmetric about x = 32
+      ring weight     8.3u at the root tips, 11u at the crown (13.9% of the
+                      disc diameter), heavy enough to survive 16px
+      negative space  3u between crown and shoulders, 23.6u at the root
+                      fork, both readable as figure/ground
+
+    fill-rule=evenodd turns the two inner subpaths into true holes, so the
+    knockouts are transparent rather than white and the mark sits correctly on
+    any background. Single fill, no mask, no gradient, so it passes the mono,
+    reversed, embroidery and fax tests.
+  -->
+  <path fill-rule="evenodd" d="
+    M 2 32
+    A 30 30 0 1 1 62 32
+    A 30 30 0 1 1 2 32
+    Z
+
+    M 26.5 18.5
+    A 5.5 5.5 0 1 1 37.5 18.5
+    A 5.5 5.5 0 1 1 26.5 18.5
+    Z
+
+    M 24.8 30.4
+    C 25.2 28.2 27.4 27.0 32 27.0
+    C 36.6 27.0 38.8 28.2 39.2 30.4
+    C 40.2 33.0 40.8 35.4 40.8 37.6
+    C 42.6 41.2 44.2 45.6 43.8 50.2
+    C 41.6 47.0 37.4 43.4 32 40.2
+    C 26.6 43.4 22.4 47.0 20.2 50.2
+    C 19.8 45.6 21.4 41.2 23.2 37.6
+    C 23.2 35.4 23.8 33.0 24.8 30.4
+    Z
+  "/>
+</svg>
