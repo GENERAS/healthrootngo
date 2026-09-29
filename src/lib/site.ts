@@ -61,12 +61,18 @@ export const site = {
  * Brand asset paths.
  *
  * Single source of truth for every reference to the logo, so a file move is
- * one edit rather than a hunt. The React tree does not read these: it inlines
- * the geometry from `brand.ts` via the <Logo> component, because `currentColor`
- * only resolves inside inline SVG. These paths are for the cases that need a
- * real URL: metadata, structured data, and downloadable/print artwork.
+ * one edit rather than a hunt. The header renders `logoPng` directly, because
+ * the tree-and-roots mark is artwork that cannot be re-coloured per theme; the
+ * remaining UI marks inline the geometry from `brand.ts` via the <Logo>
+ * component, since `currentColor` only resolves inside inline SVG. The paths
+ * below cover everything that needs a real URL: metadata, structured data,
+ * favicons, and downloadable/print artwork.
  */
 export const brandAssets = {
+  /** Tree-and-roots logo, raster. Shown in the header. */
+  logoPng: "/logo.png",
+  /** The same mark on a square canvas, for the favicon and apple-touch icon. */
+  iconPng: "/icon.png",
   /** Square mark. Inline SVG in the UI; this path is for external use. */
   mark: "/brand/mark.svg",
   /** Square mark, raster. Used for structured data and press kits. */

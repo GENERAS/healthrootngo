@@ -48,6 +48,10 @@ export const metadata: Metadata = {
   publisher: site.name,
   applicationName: site.name,
   category: "Non-Profit Organisation",
+  icons: {
+    icon: [{ url: brandAssets.iconPng, type: "image/png" }],
+    apple: [{ url: brandAssets.iconPng, sizes: "512x512" }],
+  },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -99,9 +103,9 @@ const jsonLd = {
   url: site.url,
   logo: {
     "@type": "ImageObject",
-    url: `${site.url}${brandAssets.markPng}`,
-    width: 512,
-    height: 512,
+    url: `${site.url}${brandAssets.logoPng}`,
+    width: 552,
+    height: 368,
   },
   image: `${site.url}${brandAssets.ogCard}`,
   email: site.email,

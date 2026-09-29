@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useScroll, useSpring } from "framer-motion";
 import { Heart } from "lucide-react";
-import Logo from "@/components/Logo";
 import { navLinks, site } from "@/lib/site";
 
 export default function Navbar() {
@@ -60,7 +60,15 @@ export default function Navbar() {
     >
       <div className="container">
         <Link href="/" className="navbar-brand" aria-label={`${site.name} — home`}>
-          <Logo variant="mark" size={40} className="brand-mark" />
+          <Image
+            src="/logo.png"
+            alt=""
+            aria-hidden
+            width={60}
+            height={40}
+            className="brand-mark"
+            preload
+          />
           <span>
             {site.shortName}
             <span className="brand-sub">NGO · Rwanda</span>

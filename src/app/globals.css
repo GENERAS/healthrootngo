@@ -711,15 +711,20 @@ select {
 .navbar.is-scrolled .navbar-brand,
 .navbar.is-menu-open .navbar-brand { color: var(--brand-800); }
 
-/* The mark is a disc with a true knockout, so it needs no border-radius to
-   look circular, no object-fit to avoid cropping, and no white plate behind it
-   (that plate would show through the knockouts as a white figure on the dark
-   navbar). It is inline SVG filling currentColor, so it is white on the dark
-   header and flips to --brand-800 when the header turns light. */
+/* The tree-and-roots mark is a full-colour raster on a transparent background,
+   so it cannot follow the header the way the old inline-SVG disc did: the deep
+   red roots disappear on the dark, unscrolled header. It therefore sits on a
+   small white plate that reads on both the dark header and the light, scrolled
+   one. object-fit keeps the artwork uncropped inside that plate. */
 .navbar-brand .brand-mark {
   display: block;
   flex-shrink: 0;
-  color: inherit;
+  width: 60px;
+  height: 40px;
+  padding: 4px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 12px;
 }
 
 .navbar-brand .brand-sub {
