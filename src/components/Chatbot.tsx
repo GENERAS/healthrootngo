@@ -21,9 +21,6 @@ interface Turn {
 interface ChatResponse {
   reply: string;
   followUps?: string[];
-  mode?: "live" | "offline" | "fallback" | "emergency";
-  emergency?: string;
-  error?: string;
 }
 
 const STORAGE_KEY = "hrn.chat.v1";
@@ -164,6 +161,108 @@ const ROUTE_SUGGESTIONS: Record<string, { greeting: string; chips: string[] }> =
   },
 };
 
+/* -------------------------------------------------------------------------- */
+/* Offline FAQ responder                                                       */
+/*                                                                             */
+/* The static site has no server, so replies are generated in the browser from */
+/* a short, carefully-worded knowledge base. It is not a clinician and never   */
+/* prescribes — exactly as the live assistant was designed.                    */
+/* -------------------------------------------------------------------------- */
+
+function offlineReply(text: string, chips: string[]): ChatResponse {
+  const q = text.toLowerCase();
+  const isHealth =
+    q.includes("fever") ||
+    q.includes("malaria") ||
+    q.includes("headache") ||
+    q.includes("diarrhoea") ||
+    q.includes("diarrhea") ||
+    q.includes("dehydration") ||
+    q.includes("vomit") ||
+    q.includes("stomach") ||
+    q.includes("cough") ||
+    q.includes("hygiene") ||
+    q.includes("water");
+
+  if (isHealth) {
+    const tips =
+      q.includes("fever") || q.includes("malaria")
+        ? "**Fever & malaria:** rest, drink plenty of fluids and sleep under a mosquito net every night. If the fever lasts more than 24 hours, get a malaria test at a health centre rather than guessing.\n\nSeek urgent care if there is confusion, difficulty breathing, dark urine or the fever will not come down."
+        : q.includes("headache")
+          ? "**Headache:** rest in a quiet, dark room, drink water and eat something regular. If it is severe, sudden, or comes with a stiff neck, a rash or vomiting, get urgent care."
+          : q.includes("diarrhoea") || q.includes("diarrhea") || q.includes("stomach") || q.includes("vomit")
+            ? "**Diarrhoea & stomach upset:** the priority is hydration — small sips of clean water or oral rehydration salts. Wash hands with soap after the toilet and before food. See a clinician if there is blood, a high fever, or you cannot keep fluids down."
+            : "**General advice:** rest, drink clean water, wash your hands with soap, and cover your mouth when you cough. If you are worried about yourself or a child, see a clinician early rather than late.";
+    return { reply: tips, followUps: chips };
+  }
+
+  if (q.includes("volunteer")) {
+    return {
+      reply:
+        "We love having volunteers. Reach us on the **Contact** page (or email **info@healthrootngo.org**) with your skills and availability — we will match you to an activity.",
+      followUps: ["How can I contact you?"],
+    };
+  }
+
+  if (q.includes("donate") || q.includes("give") || q.includes("donation") || q.includes("support")) {
+    return {
+      reply:
+        "Thank you! Choose an amount on the **Donate** page and tell us how you would like to give — we will take it from there. For questions, email us any time.",
+      followUps: ["How can I contact you?"],
+    };
+  }
+
+  if (q.includes("impact") || q.includes("result") || q.includes("reach") || q.includes("how many")) {
+    return {
+      reply:
+        "Our numbers and the story behind them are on the **Our Impact** page — schools reached, young people trained and sanitation days completed.",
+      followUps: ["What do you do?"],
+    };
+  }
+
+  if (q.includes("team") || q.includes("leader") || q.includes("founder") || q.includes("who runs")) {
+    return {
+      reply:
+        "Our leadership and roles are listed on the **Team** page. Every member is a volunteer, and the board oversees how we spend the money we receive.",
+      followUps: ["How can I contact you?"],
+    };
+  }
+
+  if (q.includes("gallery") || q.includes("photo") || q.includes("picture")) {
+    return {
+      reply: "Photos from our school sessions, sanitation days and training are on the **Gallery** page.",
+      followUps: ["What do you do?"],
+    };
+  }
+
+  if (
+    q.includes("contact") ||
+    q.includes("reach") ||
+    q.includes("phone") ||
+    q.includes("call") ||
+    q.includes("email") ||
+    q.includes("whatsapp") ||
+    q.includes("office")
+  ) {
+    return {
+      reply: `You can email us at **${site.email}**, call or WhatsApp **${site.phone}**, or use the form on the **Contact** page. We reply within two working days.`,
+      followUps: [],
+    };
+  }
+
+  if (q.includes("what do you do") || q.includes("programme") || q.includes("project") || q.includes("activity")) {
+    return {
+      reply:
+        "Health Root runs school health sessions, youth leadership training and community sanitation days for young Rwandans. The **What We Do** page explains each programme in detail.",
+      followUps: ["What impact have you had?", "How can I contact you?"],
+    };
+  }
+
+  return {
+    reply: `I could not match that question (this offline assistant is limited to the topics it already knows). For anything else, email **${site.email}** or call **${site.phone}** and a real human will help.`,
+    followUps: chips,
+  };
+}
 
 /* -------------------------------------------------------------------------- */
 /* Minimal, safe markdown renderer (no dangerouslySetInnerHTML)                 */
@@ -278,7 +377,6 @@ export default function Chatbot() {
 
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
 
   /* ---------------------------------------------- scroll to newest */
   useEffect(() => {
@@ -300,10 +398,6 @@ export default function Chatbot() {
     };
   }, [open]);
 
-  useEffect(() => {
-    abortRef.current?.abort();
-  }, []);
-
   /* ---------------------------------------------- ask */
   const ask = useCallback(
     async (question: string) => {
@@ -316,36 +410,12 @@ export default function Chatbot() {
       setChips([]);
       setPending(true);
 
-      const controller = new AbortController();
-      abortRef.current = controller;
-
       try {
-        const res = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: next.slice(-HISTORY_LIMIT) }),
-          signal: controller.signal,
-        });
-
-        const data = (await res.json()) as ChatResponse;
-
-        if (!res.ok && !data.reply) {
-          throw new Error(data.error ?? "Request failed");
-        }
-
+        /* Small delay so the typing indicator reads naturally. */
+        await new Promise((resolve) => setTimeout(resolve, 550));
+        const data = offlineReply(text, config.chips);
         setTurns((prev) => [...prev, { role: "model", text: data.reply }]);
-        if (data.followUps?.length) setChips(data.followUps);
-        else if (data.mode === "fallback") setChips(config.chips);
-      } catch (error) {
-        if ((error as Error).name === "AbortError") return;
-        setTurns((prev) => [
-          ...prev,
-          {
-            role: "model",
-            text: `Something went wrong on my side. Please try again, or reach us directly on **${site.phone}** or **${site.email}**.`,
-          },
-        ]);
-        setChips(config.chips);
+        setChips(data.followUps?.length ? data.followUps : config.chips);
       } finally {
         setPending(false);
       }
@@ -354,7 +424,6 @@ export default function Chatbot() {
   );
 
   const reset = useCallback(() => {
-    abortRef.current?.abort();
     setTurns([]);
     setChips(config.chips);
     setInput("");

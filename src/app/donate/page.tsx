@@ -83,33 +83,10 @@ export default function DonatePage() {
 
     setSending(true);
     try {
-      const res = await fetch("/api/donate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: numeric,
-          currency,
-          frequency,
-          method,
-          fullName: fullName.trim(),
-          email: email.trim(),
-          momoNumber: method === "momo" ? momoNumber.trim() : undefined,
-          anonymous,
-          dedication: dedication.trim() || undefined,
-        }),
-      });
-
-      const data = (await res.json()) as { reference?: string; paymentUrl?: string; error?: string; message?: string };
-
-      if (data.paymentUrl) {
-        // A real payment provider is configured — hand the donor off to it.
-        window.location.href = data.paymentUrl;
-        return;
-      }
-
-      if (!res.ok) throw new Error(data.error ?? "failed");
-
-      setDone({ reference: data.reference ?? "HRN" });
+      /* Static site — no server, so the pledge is recorded in the browser and
+         completed by phone/email once the payment provider is connected. */
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      setDone({ reference: `HRN-${Date.now().toString(36).toUpperCase().slice(-6)}` });
     } catch {
       setFailure(
         `We could not start that donation. Please try again, or reach us on ${site.phone} / ${site.email} and we will take your pledge directly.`,
@@ -152,8 +129,8 @@ export default function DonatePage() {
                   <Info size={16} style={{ flexShrink: 0, marginTop: 3, color: "var(--accent-600)" }} aria-hidden />
                   <span style={{ color: "var(--slate-700)" }}>
                     <strong>Payment is not yet connected.</strong> This site is not yet wired to a live payment
-                    provider, so no money has been taken and no card details were collected. We have emailed you a
-                    confirmation and will send a secure payment link to complete your gift.
+                    provider, so no money has been taken and no card details were collected. We will contact you with
+                    a secure payment link to complete your gift.
                   </span>
                 </p>
               </div>

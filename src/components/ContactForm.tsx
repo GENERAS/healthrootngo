@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { MapPin, Phone, Mail, MessageCircle, Send, Check, Clock, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Phone, Mail, MessageCircle, Send, Check, Clock } from "lucide-react";
 import { site } from "@/lib/site";
 
 interface Errors {
@@ -15,10 +15,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export default function ContactForm() {
   const [values, setValues] = useState({ name: "", email: "", subject: "", message: "" });
   const [errors, setErrors] = useState<Errors>({});
-  const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const honeypot = useRef<HTMLInputElement>(null);
 
   const update = (field: keyof typeof values) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setValues((v) => ({ ...v, [field]: e.target.value }));
@@ -33,51 +30,26 @@ export default function ContactForm() {
     return next;
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setServerError(null);
 
     const found = validate();
     setErrors(found);
     if (Object.keys(found).length > 0) return;
 
-    setSending(true);
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, website: honeypot.current?.value ?? "" }),
-      });
+    /* Static site — no server, so the message is composed in the sender's own
+       email app via a pre-filled mailto link. */
+    const subject = values.subject.trim() || "Message from the website";
+    const body = [
+      `Name: ${values.name.trim()}`,
+      `Email: ${values.email.trim()}`,
+      "",
+      values.message.trim(),
+    ].join("\n");
 
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-
-      if (!res.ok) {
-        // 503 means the server has no mail provider wired up yet. Saying
-        // "received" would be a lie, so keep the message on screen and point
-        // the sender at the channels that do work.
-        if (res.status === 503) {
-          setServerError(
-            `The online form is not available right now, so your message has not been sent. Please email ${site.email}, call ${site.phone}, or WhatsApp us and we will pick it up straight away.`,
-          );
-        } else if (data.error === "validation_failed") {
-          setServerError("Please check the highlighted fields and try again.");
-        } else {
-          setServerError(
-            `We could not send that just now. Please email us directly at ${site.email} and we will reply within two working days.`,
-          );
-        }
-        return;
-      }
-
-      setSent(true);
-      setValues({ name: "", email: "", subject: "", message: "" });
-    } catch {
-      setServerError(
-        `We could not send that just now. Please email us directly at ${site.email} and we will reply within two working days.`,
-      );
-    } finally {
-      setSending(false);
-    }
+    window.location.href = `mailto:${site.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    setValues({ name: "", email: "", subject: "", message: "" });
+    setSent(true);
   };
 
   if (sent) {
@@ -86,9 +58,10 @@ export default function ContactForm() {
         <span className="icon-wrap icon-wrap--teal mx-auto mb-4">
           <Check size={26} aria-hidden />
         </span>
-        <h2>Thank you — message received</h2>
+        <h2>Thanks — your email app is on its way</h2>
         <p>
-          We reply to every message within two working days. If it is urgent, please call or WhatsApp us instead.
+          Your message should now be open in your email app, addressed to {site.email}. We reply to every message
+          within two working days. If it is urgent, please call or WhatsApp us instead.
         </p>
         <button type="button" className="btn btn-outline-primary" onClick={() => setSent(false)}>
           Send another message
@@ -180,32 +153,12 @@ export default function ContactForm() {
       {/* Honeypot — hidden from users, catches naive bots */}
       <div aria-hidden="true" style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
         <label htmlFor="c-website">Website</label>
-        <input id="c-website" ref={honeypot} type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+        <input id="c-website" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
       </div>
 
-      {serverError && (
-        <p className="form-error d-flex align-items-start gap-2 mb-3" role="alert">
-          <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} aria-hidden />
-          {serverError}
-        </p>
-      )}
-
-      <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={sending}>
-        {sending ? (
-          <>
-            <span className="chat-typing" style={{ padding: 0 }} aria-hidden>
-              <span />
-              <span />
-              <span />
-            </span>
-            Sending…
-          </>
-        ) : (
-          <>
-            <Send size={17} aria-hidden />
-            Send message
-          </>
-        )}
+      <button type="submit" className="btn btn-primary btn-block btn-lg">
+        <Send size={17} aria-hidden />
+        Send message
       </button>
     </form>
   );
